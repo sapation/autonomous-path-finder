@@ -2,6 +2,7 @@ import {
     canvas, ctx, loadImages, updateGridSize, resetAgent, takeAction,
     drawGrid, drawAgent, drawCellStates, drawValues,
     agentPos, // Import agentPos directly
+    startPos, // Import start position
     setAgentPos, // Import the setter function
     setStartPos, // Import start position setter
     setTerminateOnGem, cycleCellState,
@@ -42,6 +43,7 @@ let terminateOnGem = true; // Default value
 let simulationSpeed = 100; // Default speed (ms per step)
 let animationDuration = 80; // Duration of the move animation (ms)
 let maxStepsPerEpisode = 100;
+let maxEpisode = 0;
 let currentEpisodeSteps = 0;
 let currentTheme = 'light'; // NEW: Track current theme
 
@@ -68,6 +70,10 @@ const MAX_CHART_POINTS = 500; // Max points to display on the chart
 // Reward chart state
 let rewardChartInstance = null;
 let rewardChartCtx = null;
+
+// Optimal path display state
+let showOptimalPathFlag = false;
+let optimalPath = null; // Array of {x,y}
 
 // --- NEW: Explanation data state ---
 let explanations = null; // Will be loaded from JSON
@@ -113,6 +119,9 @@ const algorithmExplanationDiv = document.getElementById('algorithmExplanation');
 const explorationExplanationDiv = document.getElementById('explorationExplanation');
 const maxStepsSlider = document.getElementById('maxStepsSlider');
 const maxStepsValueSpan = document.getElementById('maxStepsValue');
+const maxEpisodeSlider = document.getElementById('maxEpisodeSlider');
+const maxEpisodeValueSpan = document.getElementById('maxEpisodeValue');
+const showOptimalPathButton = document.getElementById('showOptimalPathButton');
 const rewardChartCanvas = document.getElementById('rewardChartCanvas');
 const srVectorAgentDisplayOption = document.getElementById('srVectorAgentDisplayOption');
 const srVectorHoverDisplayOption = document.getElementById('srVectorHoverDisplayOption');
@@ -276,6 +285,11 @@ function drawEverything() {
     // 3. Draw Items (Gems/Bad States) - On top of values/policy/grid lines
     drawCellStates(gridSize, cellSize);
 
+    // 3.5 Draw optimal path overlay if requested (on top of items but under agent)
+    if (showOptimalPathFlag && Array.isArray(optimalPath) && optimalPath.length > 0) {
+        drawOptimalPath(ctx, optimalPath, cellSize);
+    }
+
     // 4. Draw Agent - On top of items
     drawAgent(agentPos, cellSize, isAnimating ? visualAgentPos : null);
 
@@ -356,6 +370,81 @@ function updateActionProbabilityDisplay() {
      setProbValue(pDownSpan, actionProbs['down']);
      setProbValue(pLeftSpan, actionProbs['left']);
      setProbValue(pRightSpan, actionProbs['right']);
+}
+
+// --- Optimal Path Utilities ---
+function computeOptimalPathFromStart(maxSteps = gridSize * gridSize) {
+    // Compute greedy path starting from `startPos` following current policy (getBestActions)
+    const path = [];
+    const visited = new Set();
+    let current = { x: startPos.x, y: startPos.y };
+
+    for (let step = 0; step < Math.max(1, maxSteps); step++) {
+        const key = `${current.x},${current.y}`;
+        if (visited.has(key)) break; // loop detected
+        visited.add(key);
+        path.push({ x: current.x, y: current.y });
+
+        // Use getBestActions to pick a greedy action for this state
+        const bestActions = getBestActions(key, takeAction, current);
+        if (!bestActions || bestActions.length === 0) break;
+        const action = bestActions[0];
+
+        // Use takeAction to see where we'd move (without changing real agent)
+        const { newAgentPos, done } = takeAction(action, current, gridSize);
+
+        if (!newAgentPos || (newAgentPos.x === current.x && newAgentPos.y === current.y)) {
+            // No movement possible, stop
+            break;
+        }
+
+        current = { x: newAgentPos.x, y: newAgentPos.y };
+
+        if (done) {
+            path.push({ x: current.x, y: current.y });
+            break; // reached terminal
+        }
+    }
+
+    return path;
+}
+
+function drawOptimalPath(ctx, path, cellSize) {
+    if (!path || path.length === 0) return;
+
+    ctx.save();
+    // Draw semi-transparent highlight on path cells
+    ctx.fillStyle = 'rgba(0, 200, 0, 0.18)';
+    for (const p of path) {
+        ctx.fillRect(p.x * cellSize, p.y * cellSize, cellSize, cellSize);
+    }
+
+    // Draw connecting arrows/lines
+    ctx.strokeStyle = 'rgba(0, 120, 0, 0.9)';
+    ctx.fillStyle = 'rgba(0, 120, 0, 0.95)';
+    ctx.lineWidth = Math.max(2, Math.floor(cellSize * 0.08));
+
+    ctx.beginPath();
+    for (let i = 0; i < path.length - 1; i++) {
+        const a = path[i];
+        const b = path[i + 1];
+        const ax = a.x * cellSize + cellSize / 2;
+        const ay = a.y * cellSize + cellSize / 2;
+        const bx = b.x * cellSize + cellSize / 2;
+        const by = b.y * cellSize + cellSize / 2;
+        ctx.moveTo(ax, ay);
+        ctx.lineTo(bx, by);
+    }
+    ctx.stroke();
+
+    // Draw small circle at target
+    const last = path[path.length - 1];
+    const lx = last.x * cellSize + cellSize / 2;
+    const ly = last.y * cellSize + cellSize / 2;
+    ctx.beginPath();
+    ctx.arc(lx, ly, Math.max(4, cellSize * 0.08), 0, Math.PI * 2);
+    ctx.fill();
+    ctx.restore();
 }
 
 // --- Animation Function ---
@@ -623,7 +712,8 @@ function learningLoopStep() {
     const episodeEnded = episodeEndedNaturally || maxStepsReached;
 
     if (maxStepsReached && !episodeEndedNaturally) {
-        // console.log(`Episode terminated at max steps (${maxStepsPerEpisode})`);
+        console.log(`number of episodes: ${episodeCounter}`);
+        console.log(`Episode terminated at max steps (${maxStepsPerEpisode})`);
     }
 
     const afterStepLogic = () => {
@@ -646,6 +736,15 @@ function learningLoopStep() {
             resetAgent();
             visualAgentPos = { ...agentPos };
             drawEverything();
+            // If a maximum number of episodes is set, stop when reached and show optimal path
+            if (maxEpisode > 0 && episodeCounter >= maxEpisode) {
+                // Compute optimal path from start and show it
+                optimalPath = computeOptimalPathFromStart();
+                showOptimalPathFlag = true;
+                drawEverything();
+                stopLearning();
+                console.log(`Reached max episodes (${maxEpisode}). Stopping learning.`);
+            }
             // --- End Episode End Logic ---
 
         } else {
@@ -821,23 +920,23 @@ function updateSpeed() {
 // --- END UI Update Functions ---
 
 // --- Function to load explanations ---
-async function loadExplanations() {
-    try {
-        const response = await fetch('./explanations.json');
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        explanations = await response.json();
-        console.log("Explanations loaded successfully.");
-        //updateExplanationText();
-    } catch (error) {
-        console.error("Could not load explanations:", error);
-        // Handle error: display an error message in the UI?
-        explanationTitle.textContent = 'Error Loading Explanations';
-        algorithmExplanationDiv.innerHTML = '<p>Could not load explanation content. Please check the console.</p>';
-        explorationExplanationDiv.innerHTML = '';
-    }
-}
+// async function loadExplanations() {
+//     try {
+//         const response = await fetch('./explanations.json');
+//         if (!response.ok) {
+//             throw new Error(`HTTP error! status: ${response.status}`);
+//         }
+//         explanations = await response.json();
+//         console.log("Explanations loaded successfully.");
+//         //updateExplanationText();
+//     } catch (error) {
+//         console.error("Could not load explanations:", error);
+//         // Handle error: display an error message in the UI?
+//         explanationTitle.textContent = 'Error Loading Explanations';
+//         algorithmExplanationDiv.innerHTML = '<p>Could not load explanation content. Please check the console.</p>';
+//         explorationExplanationDiv.innerHTML = '';
+//     }
+// }
 
 // --- NEW: URL-based config persistence helpers ---
 function getCurrentConfigParams() {
@@ -858,6 +957,7 @@ function getCurrentConfigParams() {
     params.set('gemReward', gemRewardSlider.value);
     params.set('badReward', badStateRewardSlider.value);
     params.set('maxSteps', maxStepsPerEpisode.toString());
+    params.set('maxEpisodes', maxEpisode.toString());
     params.set('speed', speedSlider.value);
     params.set('terminate', terminateOnGem ? '1' : '0');
     return params;
@@ -893,6 +993,25 @@ createSliderHandler(updateSoftmaxBeta, softmaxBetaValueSpan, (v) => v.toFixed(1)
 createSliderHandler(setStepPenalty, stepPenaltyValueSpan, (v) => v.toFixed(1))(stepPenaltySlider);
 createSliderHandler(setGemRewardMagnitude, gemRewardValueSpan, (v) => v.toString())(gemRewardSlider);
 createSliderHandler(setBadStateRewardMagnitude, badStateRewardValueSpan, (v) => v.toString())(badStateRewardSlider);
+
+// Max Episodes slider handler (0 = unlimited)
+if (maxEpisodeSlider && maxEpisodeValueSpan) {
+    maxEpisodeSlider.addEventListener('input', () => {
+        const v = parseInt(maxEpisodeSlider.value, 10);
+        maxEpisode = isNaN(v) ? 0 : v;
+        maxEpisodeValueSpan.textContent = maxEpisode.toString();
+        updateURL();
+    });
+}
+
+// Show Optimal Path button
+if (showOptimalPathButton) {
+    showOptimalPathButton.addEventListener('click', () => {
+        optimalPath = computeOptimalPathFromStart();
+        showOptimalPathFlag = true;
+        drawEverything();
+    });
+}
 
 gridSizeSlider.addEventListener('input', () => {
     const newSizeValue = parseInt(gridSizeSlider.value, 10);
@@ -1058,22 +1177,6 @@ maxStepsSlider.addEventListener('input', () => {
     updateURL(); // ← record it
 });
 
-// --- NEW: Theme Switching Logic ---
-// function setTheme(theme) {
-//     if (theme === 'dark') {
-//         document.body.classList.add('dark-mode');
-//         themeToggleCheckbox.checked = false; // Dark mode = unchecked (moon visible)
-//         currentTheme = 'dark';
-//     } else {
-//         document.body.classList.remove('dark-mode');
-//         themeToggleCheckbox.checked = true; // Light mode = checked (sun visible)
-//         currentTheme = 'light';
-//     }
-//     localStorage.setItem('theme', theme); // Save preference
-
-//     // Update Chart.js colors AFTER the theme class has been applied to the body
-//     updateChartTheme();
-// }
 
 function updateChartTheme() {
     if (!rewardChartInstance) return;
@@ -1234,6 +1337,10 @@ async function initializeApp() {
         const v = parseInt(urlParams.get('maxSteps'),10);
         if (!isNaN(v) && maxStepsSlider && maxStepsValueSpan) { maxStepsPerEpisode = v; maxStepsSlider.value = v; maxStepsValueSpan.textContent = v.toString(); }
     }
+    if (urlParams.has('maxEpisodes')) {
+        const v = parseInt(urlParams.get('maxEpisodes'),10);
+        if (!isNaN(v) && maxEpisodeSlider && maxEpisodeValueSpan) { maxEpisode = v; maxEpisodeSlider.value = v; maxEpisodeValueSpan.textContent = v.toString(); }
+    }
     if (urlParams.has('speed')) {
         const v = parseInt(urlParams.get('speed'),10);
         if (!isNaN(v) && speedSlider) { speedSlider.value = v; updateSpeed(); }
@@ -1266,7 +1373,7 @@ async function initializeApp() {
     try {
         // Load images returns a promise now, call it directly
         await Promise.all([
-            loadExplanations(),
+            //loadExplanations(),
             loadImages() // Call loadImages() here
         ]);
         // Now both are loaded, proceed with drawing etc.
