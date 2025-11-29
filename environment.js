@@ -18,7 +18,7 @@ export let rewardMagnitudeBad = -10;
 // --- SVGs ---
 const agentSvgString = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">🤖</text>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">🚆</text>
 </svg>`;
 
 const rewardSvgString = `
@@ -28,12 +28,12 @@ const rewardSvgString = `
 
 const badStateSvgString = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">☠️</text>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">🔥</text>
 </svg>`;
 
 const wallSvgString = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">🚧</text>
+  <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">🏢</text>
 </svg>`;
 
 export let agentImage = new Image();
@@ -159,9 +159,6 @@ export function updateGridSize(gridSizeInput, currentGridSize) {
         return { gridSize: newSize, cellSize: newCellSize, updated: true };
     } else {
         console.warn("Invalid grid size input:", gridSizeInput.value);
-        // Use currentGridSize if it's a slider interaction, otherwise maybe default?
-        // For slider, setting value back might be confusing. Let's rely on the main 'gridSize' var.
-        // gridSizeInput.value = currentGridSize; // Don't reset slider input value directly
         return { gridSize: currentGridSize, cellSize: canvas.width / currentGridSize, updated: false };
     }
 }
@@ -240,7 +237,6 @@ export function drawCellStates(gridSize, cellSize) {
             } else if (state === REWARD_WALL) { // NEW: Draw wall
                 ctx.drawImage(wallImage, x * cellSize, y * cellSize, cellSize, cellSize);
             }
-            // REWARD_EMPTY (0) draws nothing
         }
     }
 }
@@ -627,11 +623,6 @@ export function takeAction(action, currentAgentPos, gridSize) {
         // If it's a valid move (not into a wall), update the next position
         nextX = potentialNextX;
         nextY = potentialNextY;
-    } else {
-        // If the move is invalid (out of bounds or into a wall),
-        // the agent stays in the current position (x, y).
-        // Optionally, apply a different penalty for hitting a wall
-        // reward = -1.0; // Example: Larger penalty for hitting a wall
     }
 
 
@@ -653,8 +644,6 @@ export function takeAction(action, currentAgentPos, gridSize) {
         reward = rewardMagnitudeBad; // MODIFIED: Use variable
         done = true; // Episode always terminates on hitting the bad state
     }
-    // If cellState is REWARD_EMPTY or REWARD_WALL (which agent can't enter, but might start on if forced?),
-    // the step penalty applies (or wall penalty if added above).
 
     return { nextState, reward, newAgentPos, done }; // Return done flag
 }
@@ -696,10 +685,6 @@ export function getGridRewards() {
     return gridRewards.map(row => [...row]);
 }
 
-// Function to draw the policy arrows (greedy action) for each state
-// Draws a single, large, centered ASCII arrow character based on the first best action found.
-// Arrow color now based on action probability.
-// Accepts relevant tables and the current algorithm
 export function drawPolicyArrows(ctx, gridSize, cellSize, qTable, hTable, mTable, wTable, currentAlgorithm, takeActionFuncForEnvLookup, currentAgentPosForLookup) {
     if (!qTable && !hTable && !mTable && !wTable) return;
 

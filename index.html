@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>RL Playground</title>
+    <title>Autonomous Path Finder</title>
     <link rel="stylesheet" href="style.css">
     <!-- KaTeX Includes -->
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
@@ -18,7 +18,7 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
 <body class="dark-mode">
-    <h1> RL Playground </h1>
+    <h1> Autonomous Path Finder </h1>
     <div class="main-container">
         <!-- Row 1, Col 1: Algo Settings -->
         <div class="card algo-settings-card">
@@ -33,13 +33,13 @@
                                 <select id="algorithmSelect" title="The reinforcement learning algorithm used to update Q-values and learn the optimal policy.">
                                     <option value="q-learning" selected>Q-Learning</option>
                                     <option value="sarsa">SARSA</option>
+                                    <option value="monte-carlo">Monte Carlo free</option>
                                 </select>
                             </div>
                             <div class="field">
                                 <label for="explorationStrategySelect" title="Method used by the agent to decide between exploring new actions and exploiting known good actions (Used for Q-Learning, SARSA, Expected SARSA, Monte Carlo, SR).">Exploration Strategy:</label>
                                 <select id="explorationStrategySelect" title="Method used by the agent to decide between exploring new actions and exploiting known good actions (Used for Q-Learning, SARSA, Expected SARSA, Monte Carlo, SR).">
                                     <option value="epsilon-greedy" selected>ε-Greedy</option>
-                                    <option value="softmax">Softmax</option>
                                     <option value="random">Random</option>
                                     <option value="greedy">Greedy</option>
                                 </select>
@@ -120,16 +120,12 @@
         <div class="card sim-card">
             <h4>Interactive Simulation</h4>
             <canvas id="gridCanvas" width="400" height="400"></canvas>
-            <!-- <div class="canvas-helper-text">
-                <span>Tip: Click to cycle state content (💎/☠️/🚧/empty).<br>Shift+Click to set start state (🏠).</span>
-            </div> -->
             <div class="controls">
                  <button class="btn btn--primary" id="startButton">Start Learning</button>
                  <button class="btn btn--secondary" id="stopButton">Stop Learning</button>
-                  <!-- <button class="btn btn--secondary" id="showOptimalPathButton" title="Compute">Show Optimal Path</button> -->
+                  <button class="btn btn--secondary" id="showOptimalPathButton" title="Compute">Show Optimal Path</button>
                  <div class="status-lines" style="margin-top:8px;">
                      <div>Training time: <span id="learningTimeDisplay">—</span></div>
-                     <div>Path compute time: <span id="pathTimeDisplay">—</span></div>
                  </div>
             </div>
         </div>
@@ -273,12 +269,11 @@
                 }
              } else {
                  console.warn("renderMathInElement not found on DOMContentLoaded. KaTeX might not have loaded.");
-                 // Optionally, set a timeout or interval to retry rendering later
              }
         });
     </script>
     <footer class="copyright-footer">
-        <p></p>
+        <p>© 2025 Autonomous Path Finder</p>
     </footer>
 </body>
 </html> 

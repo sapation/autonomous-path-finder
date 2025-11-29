@@ -273,7 +273,7 @@ class ExpectedSarsaAlgorithm extends QLearningAlgorithm {
     }
 }
 
-// Monte Carlo Algorithm
+// Monte Carlo free Algorithm
 class MonteCarloAlgorithm extends QLearningAlgorithm {
     constructor(gridSize, config = {}) {
         super(gridSize, config);

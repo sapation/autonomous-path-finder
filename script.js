@@ -1,22 +1,22 @@
 import {
     canvas, ctx, loadImages, updateGridSize, resetAgent, takeAction,
     drawGrid, drawAgent, drawCellStates, drawValues,
-    agentPos, // Import agentPos directly
-    startPos, // Import start position
-    setAgentPos, // Import the setter function
-    setStartPos, // Import start position setter
+    agentPos,
+    startPos,
+    setAgentPos,
+    setStartPos,
     setTerminateOnGem, cycleCellState,
-    drawRewardText, // Import the new drawing function
-    setStepPenalty, // Added setStepPenalty
-    initializeGridRewards, // Import the initialization function
-    drawPolicyArrows, // Import policy drawing function
-    interpolateProbColor, // Import the color interpolation function
-    drawSRVector, // NEW: Import SR vector drawing function
-    setGemRewardMagnitude, // NEW: Import gem reward setter
-    setBadStateRewardMagnitude, // NEW: Import bad state reward setter
-    rewardMagnitudeGem as initialGemReward, // NEW: Import initial gem reward
-    rewardMagnitudeBad as initialBadReward, // NEW: Import initial bad reward
-    drawSRWVector, // NEW: Import SR W vector drawing function
+    drawRewardText,
+    setStepPenalty,
+    initializeGridRewards,
+    drawPolicyArrows,
+    interpolateProbColor,
+    drawSRVector,
+    setGemRewardMagnitude,
+    setBadStateRewardMagnitude,
+    rewardMagnitudeGem as initialGemReward,
+    rewardMagnitudeBad as initialBadReward,
+    drawSRWVector,
 } from './environment.js';
 
 import {
@@ -37,20 +37,19 @@ import {
 } from './algorithms.js';
 
 // --- State Variables ---
-let gridSize = 5; // Updated default to match HTML input
+let gridSize = 5;
 let cellSize = canvas.width / gridSize;
-let terminateOnGem = true; // Default value
-let simulationSpeed = 100; // Default speed (ms per step)
-let animationDuration = 80; // Duration of the move animation (ms)
+let terminateOnGem = true;
+let simulationSpeed = 100;
+let animationDuration = 80;
 let maxStepsPerEpisode = 100;
 let maxEpisode = 0;
 let currentEpisodeSteps = 0;
-let currentTheme = 'light'; // NEW: Track current theme
 
 let learningInterval = null;
 let isLearning = false;
 let isAnimating = false;
-let visualAgentPos = { x: 0, y: 0 }; // For rendering during animation (initialized in reset/initializeApp)
+let visualAgentPos = { x: 0, y: 0 };
 let animationFrameId = null;
 let hoveredCell = null;
 let cellDisplayMode = 'values-color';
@@ -64,8 +63,8 @@ let totalRewardForEpisode = 0;
 let episodicRewards = [];
 let smoothedEpisodicRewards = [];
 let episodeNumbers = [];
-const MOVING_AVERAGE_WINDOW = 20; // How many episodes to average over
-const MAX_CHART_POINTS = 500; // Max points to display on the chart
+const MOVING_AVERAGE_WINDOW = 20;
+const MAX_CHART_POINTS = 500;
 
 // Reward chart state
 let rewardChartInstance = null;
@@ -84,9 +83,6 @@ let pathComputeDurationMs = null;
 // DOM timing displays
 const learningTimeDisplay = document.getElementById('learningTimeDisplay');
 const pathTimeDisplay = document.getElementById('pathTimeDisplay');
-
-// --- NEW: Explanation data state ---
-let explanations = null; // Will be loaded from JSON
 
 // --- DOM Elements ---
 const startButton = document.getElementById('startButton');
@@ -166,10 +162,6 @@ function initializeCollapsibles() {
         const targetContent = document.querySelector(targetId);
 
         if (targetContent) {
-            // Initialize state (start expanded)
-            // If you want them to start collapsed, add 'collapsed' class here initially
-            // targetContent.classList.add('collapsed');
-            // header.classList.add('collapsed');
 
             header.addEventListener('click', () => {
                 const isCollapsed = targetContent.classList.contains('collapsed');
@@ -202,21 +194,19 @@ function drawEverything() {
         drawValues(ctx, gridSize, cellSize, qTable, vTable, mTable, wTable, algorithm, true);
     } else if (cellDisplayMode === 'policy') {
         drawPolicyArrows(ctx, gridSize, cellSize, qTable, hTable, mTable, wTable, algorithm, takeAction, agentPos);
-    } else if (cellDisplayMode === 'sr-vector') { // Agent-based SR
+    } else if (cellDisplayMode === 'sr-vector') {
         const agentStateKey = `${agentPos.x},${agentPos.y}`;
         drawSRVector(ctx, gridSize, cellSize, agentStateKey, mTable, true);
-    } else if (cellDisplayMode === 'sr-vector-hover') { // Hover-based SR (NEW)
+    } else if (cellDisplayMode === 'sr-vector-hover') {
         if (hoveredCell) {
             const hoveredStateKey = `${hoveredCell.x},${hoveredCell.y}`;
             drawSRVector(ctx, gridSize, cellSize, hoveredStateKey, mTable, true);
         } else {
             // Optionally draw a placeholder if nothing is hovered
         }
-    } else if (cellDisplayMode === 'sr-w-vector') { // NEW: W vector display
+    } else if (cellDisplayMode === 'sr-w-vector') { 
         drawSRWVector(ctx, gridSize, cellSize, wTable, true);
     }
-    // else (cellDisplayMode === 'none') -> grid lines below will show through
-
     // 2. Draw Grid Lines & Start Icon & Hover Highlight (drawGrid handles these)
     drawGrid(gridSize, cellSize, hoveredCell);
 
@@ -483,8 +473,6 @@ function initializeRewardChart() {
     const chartFontSize = 14;
     // Get computed styles based on the CURRENT theme at initialization
     const computedStyle = getComputedStyle(document.documentElement);
-    // const isDarkMode = document.body.classList.contains('dark-mode'); // Check class directly
-    const isDarkMode = currentTheme === 'dark'; // Use the variable set during initialization
     const gridColor = computedStyle.getPropertyValue('--color-chart-grid-line').trim();
     const labelColor = computedStyle.getPropertyValue('--color-chart-axis-label').trim();
     const tooltipBg = computedStyle.getPropertyValue('--color-chart-tooltip-bg').trim();
@@ -890,25 +878,6 @@ function updateSpeed() {
 }
 // --- END UI Update Functions ---
 
-// --- Function to load explanations ---
-// async function loadExplanations() {
-//     try {
-//         const response = await fetch('./explanations.json');
-//         if (!response.ok) {
-//             throw new Error(`HTTP error! status: ${response.status}`);
-//         }
-//         explanations = await response.json();
-//         console.log("Explanations loaded successfully.");
-//         //updateExplanationText();
-//     } catch (error) {
-//         console.error("Could not load explanations:", error);
-//         // Handle error: display an error message in the UI?
-//         explanationTitle.textContent = 'Error Loading Explanations';
-//         algorithmExplanationDiv.innerHTML = '<p>Could not load explanation content. Please check the console.</p>';
-//         explorationExplanationDiv.innerHTML = '';
-//     }
-// }
-
 // --- NEW: URL-based config persistence helpers ---
 function getCurrentConfigParams() {
     const params = new URLSearchParams();
@@ -1067,9 +1036,6 @@ function updateExplorationControlVisibility(strategy) {
     if (strategy === 'epsilon-greedy') {
         epsilonField.style.display = '';
         softmaxBetaControl.style.display = 'none';
-    } else if (strategy === 'softmax') {
-        epsilonField.style.display = 'none';
-        softmaxBetaControl.style.display = '';
     } else { // Handles 'random' and 'greedy'
         epsilonField.style.display = 'none';
         softmaxBetaControl.style.display = 'none';
