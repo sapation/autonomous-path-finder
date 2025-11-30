@@ -5,15 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Autonomous Path Finder</title>
     <link rel="stylesheet" href="style.css">
-    <!-- KaTeX Includes -->
-    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.css" integrity="sha384-5TcZemv2l/9On385z///+d7MSYlvIEw9FuZTIdZ14vJLqWphw7e7ZPuOiCHJcFCP" crossorigin="anonymous">
-
-    <!-- The loading of KaTeX is deferred to speed up page rendering -->
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/katex.min.js" integrity="sha384-cMkvdD8LoxVzGF/RPUKAcvmm49FQ0oxwDF3BGKtDXcEc+T1b2N+teh/OJfpU0jr6" crossorigin="anonymous"></script>
-
-    <!-- To automatically render math in text elements, include the auto-render extension: -->
-    <script defer src="https://cdn.jsdelivr.net/npm/katex@0.16.22/dist/contrib/auto-render.min.js" integrity="sha384-hCXGrW6PitJEwbkoStFjeJxv+fSOOQKOPbJxSfM6G5sWZjAyWhXiTIIAmQqnlLlh" crossorigin="anonymous"
-        onload="renderMathInElement(document.body);"></script>            <!-- End KaTeX Includes -->
     <!-- NEW: Chart.js Dependency -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.3/dist/chart.umd.min.js"></script>
 </head>
@@ -51,60 +42,18 @@
                                     <span class="slider-value" id="lrValue">0.1</span>
                                 </div>
                             </div>
-
-                            <!-- NEW: Actor-Critic Learning Rate Controls -->
-                            <div id="actorCriticLRControl" class="field field--slider" style="display: none;">
-                                <label for="actorLrSlider" title="Actor Learning Rate (α_actor): Step size for updating action preferences (H-table). Specific to Actor-Critic.">Actor LR (α<sub>A</sub>):</label>
-                                <div class="slider-container">
-                                    <input type="range" id="actorLrSlider" min="0.01" max="1" step="0.01" value="0.1" title="Actor Learning Rate (α_actor): Step size for updating action preferences (H-table). Specific to Actor-Critic.">
-                                    <span class="slider-value" id="actorLrValue">0.1</span>
-                                </div>
-                            </div>
-                            <div id="criticLRControl" class="field field--slider" style="display: none;">
-                                <label for="criticLrSlider" title="Critic Learning Rate (α_critic): Step size for updating state values (V-table). Specific to Actor-Critic.">Critic LR (α<sub>C</sub>):</label>
-                                <div class="slider-container">
-                                    <input type="range" id="criticLrSlider" min="0.01" max="1" step="0.01" value="0.1" title="Critic Learning Rate (α_critic): Step size for updating state values (V-table). Specific to Actor-Critic.">
-                                    <span class="slider-value" id="criticLrValue">0.1</span>
-                                </div>
-                            </div>
-                            <!-- END NEW Actor-Critic Controls -->
-
-                            <!-- NEW: SR Learning Rate Controls -->
-                            <div id="srMLRControl" class="field field--slider" style="display: none;">
-                                <label for="srMLrSlider" title="SR Matrix Learning Rate (α_M): Step size for updating the successor representation matrix (M-table). Specific to SR.">SR Matrix LR (α<sub>M</sub>):</label>
-                                <div class="slider-container">
-                                    <input type="range" id="srMLrSlider" min="0.01" max="1" step="0.01" value="0.1" title="SR Matrix Learning Rate (α_M): Step size for updating the successor representation matrix (M-table). Specific to SR.">
-                                    <span class="slider-value" id="srMLrValue">0.1</span>
-                                </div>
-                            </div>
-                             <div id="srWLRControl" class="field field--slider" style="display: none;">
-                                <label for="srWLrSlider" title="SR Reward Weight Learning Rate (α_W): Step size for updating the reward weights (w-table). Specific to SR.">SR Weight LR (α<sub>W</sub>):</label>
-                                <div class="slider-container">
-                                    <input type="range" id="srWLrSlider" min="0.01" max="1" step="0.01" value="0.1" title="SR Reward Weight Learning Rate (α_W): Step size for updating the reward weights (w-table). Specific to SR.">
-                                    <span class="slider-value" id="srWLrValue">0.1</span>
-                                </div>
-                            </div>
-                            <!-- END NEW SR Controls -->
-
                             <div class="field field--slider">
-                                <label for="discountSlider" title="Determines the importance of future rewards. A value closer to 1 makes the agent focus more on long-term rewards.">Discount Factor (γ):</label>
+                                <label for="discountSlider" title="Determines the importance of future rewards.">Discount Factor (γ):</label>
                                 <div class="slider-container">
-                                    <input type="range" id="discountSlider" min="0.1" max="1" step="0.01" value="0.9" title="Determines the importance of future rewards. A value closer to 1 makes the agent focus more on long-term rewards.">
+                                    <input type="range" id="discountSlider" min="0.1" max="1" step="0.01" value="0.9" title="Determines the importance of future rewards.">
                                     <span class="slider-value" id="discountValue">0.9</span>
                                 </div>
                             </div>
                             <div class="field field--slider">
-                                <label for="epsilonSlider" title="Controls the trade-off between exploration (trying random actions) and exploitation (choosing the best known action). Higher values mean more exploration. (Used for ε-Greedy)">Exploration Rate (ε):</label>
+                                <label for="epsilonSlider" title="Controls the trade-off between exploration">Exploration Rate (ε):</label>
                                 <div class="slider-container">
-                                    <input type="range" id="epsilonSlider" min="0" max="1" step="0.01" value="0.2" title="Controls the trade-off between exploration (trying random actions) and exploitation (choosing the best known action). Higher values mean more exploration. (Used for ε-Greedy)">
+                                    <input type="range" id="epsilonSlider" min="0" max="1" step="0.01" value="0.2" title="Controls the trade-off between exploration.">
                                      <span class="slider-value" id="epsilonValue">0.2</span>
-                                </div>
-                            </div>
-                            <div id="softmaxBetaControl" class="field field--slider" style="display: none;">
-                                <label for="softmaxBetaSlider" title="Controls the randomness of action selection. Higher values lead to more deterministic (greedy) choices. Used for Softmax exploration and Actor-Critic policy.">Softmax Temperature (β):</label>
-                                <div class="slider-container">
-                                    <input type="range" id="softmaxBetaSlider" min="0.1" max="10" step="0.1" value="1.0" title="Controls the randomness of action selection. Higher values lead to more deterministic (greedy) choices. Used for Softmax exploration and Actor-Critic policy.">
-                                     <span class="slider-value" id="softmaxBetaValue">1.0</span>
                                 </div>
                             </div>
                         </div>
@@ -113,7 +62,7 @@
                 <!-- Settings content ends -->
             </div>
             <!-- Reset Button moved HERE, directly under .card, after .settings -->
-            <button class="btn btn--secondary" id="resetAgentButton" title="Reset agent's learned Q-values and progress, keeping the environment layout.">Reset Algorithm</button>
+            <button class="btn btn--secondary" id="resetAgentButton" title="Reset agent.">Reset Algorithm</button>
         </div>
 
         <!-- Row 1, Col 2: Simulation -->
@@ -170,13 +119,8 @@
                             <div class="field">
                                 <label for="cellDisplayModeSelect" title="Choose what to display in each grid cell: Value color, Value text, greedy Policy arrows, SR vector (agent/hover), or None.">Cell Display:</label>
                                 <select id="cellDisplayModeSelect" title="Choose what to display in each grid cell: Value color, Value text, greedy Policy arrows, SR vector (agent/hover), or None.">
-                                    <option value="values-color" selected>Values (Color Only)</option>
-                                    <option value="values-text">Values (Color + Text)</option>
-                                    <option value="policy">Policy (π)</option>
-                                    <option value="sr-vector" id="srVectorAgentDisplayOption">SR Vector M(agent, :) (Color+Text)</option>
-                                    <option value="sr-vector-hover" id="srVectorHoverDisplayOption">SR Vector M(hover, :) (Color+Text)</option>
-                                    <option value="sr-w-vector" id="srWVectorDisplayOption">SR Weights w(:) (Color+Text)</option>
                                     <option value="none">None</option>
+                                    <option value="values-color" selected>Value Color</option>
                                 </select>
                             </div>
                             <div class="field field--slider">
@@ -194,7 +138,7 @@
                                 </div>
                             </div>
                             <div class="field field--slider">
-                                <label for="badStateRewardSlider" title="The reward (penalty) received for landing on a skull (☠️).">Skull Penalty:</label>
+                                <label for="badStateRewardSlider" title="The reward (penalty) received for landing on a skull.">Fire Penalty:</label>
                                 <div class="slider-container">
                                     <input type="range" id="badStateRewardSlider" name="badStateReward" value="-10" min="-20" max="-1" step="1" title="The reward (penalty) received for landing on a skull (☠️).">
                                     <span class="slider-value" id="badStateRewardValue">-10</span>
@@ -243,35 +187,9 @@
                 </div>
             </div>
         </div>
-
     </div> <!-- End main-container -->
 
     <script type="module" src="script.js"></script>
-    <!-- Add KaTeX auto-render configuration -->
-    <script>
-        document.addEventListener("DOMContentLoaded", function() {
-             // Ensure renderMathInElement is available before calling it
-             if (typeof renderMathInElement === 'function') {
-                try {
-                    renderMathInElement(document.body, {
-                        // customised options
-                        delimiters: [
-                            {left: '$$', right: '$$', display: true},
-                            {left: '$', right: '$', display: false},
-                            {left: '\\(', right: '\\)', display: false},
-                            {left: '\\[', right: '\\]', display: true}
-                        ],
-                        // • rendering keys, e.g.:
-                        throwOnError : false
-                    });
-                } catch (error) {
-                     console.error("Initial KaTeX rendering failed:", error);
-                }
-             } else {
-                 console.warn("renderMathInElement not found on DOMContentLoaded. KaTeX might not have loaded.");
-             }
-        });
-    </script>
     <footer class="copyright-footer">
         <p>© 2025 Autonomous Path Finder</p>
     </footer>

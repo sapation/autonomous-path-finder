@@ -246,7 +246,6 @@ import {
     actions, getBestActions, getActionProbabilities, qTable, vTable, hTable,
     mTable, wTable, // Import SR tables
     getSelectedAlgorithm, // Use getter instead of selectedAlgorithm
-    calculateVValueSR, // Import SR V calculation helper
     getDiscountFactor, // Use getter instead of discountFactor
     getValueForState // Import the helper function
 } from './algorithms.js';
@@ -258,22 +257,15 @@ function getValue(state, qTable, vTable, mTable, wTable, currentAlgorithm, gridS
         return getValueForState(state);
     } catch (error) {
         console.warn('Error accessing algorithm value, falling back to direct table access:', error);
-        
-        // Fallback to direct table access
-        if (currentAlgorithm === 'actor-critic') {
-            return vTable[state] !== undefined ? vTable[state] : 0;
-        } else if (currentAlgorithm === 'sr') {
-            return calculateVValueSR(state, mTable, wTable, gridSize, getDiscountFactor()); // Use getter
-        } else {
-            if (!qTable || !qTable[state]) return 0;
-            let maxQ = -Infinity;
-            for (const action of actions) {
-                if (qTable[state][action] !== undefined && qTable[state][action] > maxQ) {
-                    maxQ = qTable[state][action];
-                }
+
+        if (!qTable || !qTable[state]) return 0;
+        let maxQ = -Infinity;
+        for (const action of actions) {
+            if (qTable[state][action] !== undefined && qTable[state][action] > maxQ) {
+                maxQ = qTable[state][action];
             }
-            return maxQ === -Infinity ? 0 : maxQ;
         }
+        return maxQ === -Infinity ? 0 : maxQ;
     }
 }
 

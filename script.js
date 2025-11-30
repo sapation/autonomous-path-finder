@@ -21,19 +21,12 @@ import {
 
 import {
     qTable, vTable, hTable, mTable, wTable,
-    // Use getter functions instead of direct imports
-    getLearningRate, getDiscountFactor, getExplorationRate, getSoftmaxBeta,
+    getLearningRate, getDiscountFactor, getExplorationRate,
     getExplorationStrategy, getSelectedAlgorithm,
-    // Keep the update functions
     initializeTables, learningStep,
-    updateLearningRate, updateDiscountFactor, updateExplorationRate, updateSoftmaxBeta, updateExplorationStrategy,
+    updateLearningRate, updateDiscountFactor, updateExplorationRate, updateExplorationStrategy,
     updateSelectedAlgorithm, applyMonteCarloUpdates,
-    getActionProbabilities, getBestActions, calculateQValueSR,
-    // Keep specific learning rates and their update functions
-    getActorLearningRate, getCriticLearningRate,
-    getSRMWeightLearningRate, getSRWWeightLearningRate,
-    updateActorLearningRate, updateCriticLearningRate,
-    updateSRMLearningRate, updateSRWLearningRate,
+    getActionProbabilities, getBestActions,
 } from './algorithms.js';
 
 // --- State Variables ---
@@ -55,7 +48,7 @@ let hoveredCell = null;
 let cellDisplayMode = 'values-color';
 
 // State for reward text animation
-let rewardAnimation = { text: '', pos: null, alpha: 0, offsetY: 0, startTime: 0, duration: 600 }; // Duration in ms
+let rewardAnimation = { text: '', pos: null, alpha: 0, offsetY: 0, startTime: 0, duration: 600 };
 let rewardAnimationFrameId = null;
 
 let episodeCounter = 0;
@@ -97,9 +90,6 @@ const discountValueSpan = document.getElementById('discountValue');
 const epsilonSlider = document.getElementById('epsilonSlider');
 const epsilonValueSpan = document.getElementById('epsilonValue');
 const explorationStrategySelect = document.getElementById('explorationStrategySelect');
-const softmaxBetaControl = document.getElementById('softmaxBetaControl');
-const softmaxBetaSlider = document.getElementById('softmaxBetaSlider');
-const softmaxBetaValueSpan = document.getElementById('softmaxBetaValue');
 const gridSizeSlider = document.getElementById('gridSizeSlider');
 const gridSizeValueSpan = document.getElementById('gridSizeValue');
 const algorithmSelect = document.getElementById('algorithmSelect');
@@ -108,7 +98,6 @@ const speedSlider = document.getElementById('speedSlider');
 const speedValueSpan = document.getElementById('speedValue');
 const qValueDisplayDiv = document.getElementById('qValueDisplay');
 const qValueDisplayHeader = document.querySelector('#qValueDisplay .collapsible-header');
-const qGridDiv = document.querySelector('#qValueDisplay .q-grid');
 const qUpSpan = document.getElementById('qUp');
 const qDownSpan = document.getElementById('qDown');
 const qLeftSpan = document.getElementById('qLeft');
@@ -122,37 +111,35 @@ const pLeftSpan = document.getElementById('pLeft');
 const pRightSpan = document.getElementById('pRight');
 const explanationTitle = document.getElementById('explanationTitle');
 const algorithmExplanationDiv = document.getElementById('algorithmExplanation');
-const explorationExplanationDiv = document.getElementById('explorationExplanation');
 const maxStepsSlider = document.getElementById('maxStepsSlider');
 const maxStepsValueSpan = document.getElementById('maxStepsValue');
 const maxEpisodeSlider = document.getElementById('maxEpisodeSlider');
 const maxEpisodeValueSpan = document.getElementById('maxEpisodeValue');
 const showOptimalPathButton = document.getElementById('showOptimalPathButton');
 const rewardChartCanvas = document.getElementById('rewardChartCanvas');
-const srVectorAgentDisplayOption = document.getElementById('srVectorAgentDisplayOption');
-const srVectorHoverDisplayOption = document.getElementById('srVectorHoverDisplayOption');
-const themeToggleCheckbox = document.getElementById('theme-checkbox');
+// const srVectorAgentDisplayOption = document.getElementById('srVectorAgentDisplayOption');
+// const srVectorHoverDisplayOption = document.getElementById('srVectorHoverDisplayOption');
 const gemRewardSlider = document.getElementById('gemRewardSlider');
 const gemRewardValueSpan = document.getElementById('gemRewardValue');
 const badStateRewardSlider = document.getElementById('badStateRewardSlider');
 const badStateRewardValueSpan = document.getElementById('badStateRewardValue');
 
 // Actor-Critic LR controls DOM Elements
-const actorCriticLRControl = document.getElementById('actorCriticLRControl');
-const actorLrSlider = document.getElementById('actorLrSlider');
-const actorLrValueSpan = document.getElementById('actorLrValue');
-const criticLRControl = document.getElementById('criticLRControl');
-const criticLrSlider = document.getElementById('criticLrSlider');
-const criticLrValueSpan = document.getElementById('criticLrValue');
+// const actorCriticLRControl = document.getElementById('actorCriticLRControl');
+// const actorLrSlider = document.getElementById('actorLrSlider');
+// const actorLrValueSpan = document.getElementById('actorLrValue');
+// const criticLRControl = document.getElementById('criticLRControl');
+// const criticLrSlider = document.getElementById('criticLrSlider');
+// const criticLrValueSpan = document.getElementById('criticLrValue');
 
 // SR LR controls DOM Elements
-const srMLRControl = document.getElementById('srMLRControl');
-const srMLrSlider = document.getElementById('srMLrSlider');
-const srMLrValueSpan = document.getElementById('srMLrValue');
-const srWLRControl = document.getElementById('srWLRControl');
-const srWLrSlider = document.getElementById('srWLrSlider');
-const srWLrValueSpan = document.getElementById('srWLrValue');
-const srWVectorDisplayOption = document.getElementById('srWVectorDisplayOption');
+// const srMLRControl = document.getElementById('srMLRControl');
+// const srMLrSlider = document.getElementById('srMLrSlider');
+// const srMLrValueSpan = document.getElementById('srMLrValue');
+// const srWLRControl = document.getElementById('srWLRControl');
+// const srWLrSlider = document.getElementById('srWLrSlider');
+// const srWLrValueSpan = document.getElementById('srWLrValue');
+//const srWVectorDisplayOption = document.getElementById('srWVectorDisplayOption');
 
 // --- NEW: Collapsible Settings Handler ---
 function initializeCollapsibles() {
@@ -162,7 +149,6 @@ function initializeCollapsibles() {
         const targetContent = document.querySelector(targetId);
 
         if (targetContent) {
-
             header.addEventListener('click', () => {
                 const isCollapsed = targetContent.classList.contains('collapsed');
 
@@ -179,7 +165,6 @@ function initializeCollapsibles() {
         }
     });
 }
-// --- End NEW ---
 
 // --- Drawing Function ---
 function drawEverything() {
@@ -201,32 +186,22 @@ function drawEverything() {
         if (hoveredCell) {
             const hoveredStateKey = `${hoveredCell.x},${hoveredCell.y}`;
             drawSRVector(ctx, gridSize, cellSize, hoveredStateKey, mTable, true);
-        } else {
-            // Optionally draw a placeholder if nothing is hovered
         }
     } else if (cellDisplayMode === 'sr-w-vector') { 
         drawSRWVector(ctx, gridSize, cellSize, wTable, true);
     }
-    // 2. Draw Grid Lines & Start Icon & Hover Highlight (drawGrid handles these)
     drawGrid(gridSize, cellSize, hoveredCell);
-
-    // 3. Draw Items (Gems/Bad States) - On top of values/policy/grid lines
     drawCellStates(gridSize, cellSize);
 
-    // 3.5 Draw optimal path overlay if requested (on top of items but under agent)
     if (showOptimalPathFlag && Array.isArray(optimalPath) && optimalPath.length > 0) {
         drawOptimalPath(ctx, optimalPath, cellSize);
     }
-
-    // 4. Draw Agent - On top of items
     drawAgent(agentPos, cellSize, isAnimating ? visualAgentPos : null);
 
-    // 5. Draw Floating Reward Text - On top of agent
     if (rewardAnimation.alpha > 0 && rewardAnimation.pos) {
         drawRewardText(ctx, rewardAnimation.text, rewardAnimation.pos, cellSize, rewardAnimation.alpha, rewardAnimation.offsetY);
     }
 
-    // 6. Update Info Displays (does not affect canvas)
     updateQValueOrPreferenceDisplay();
     updateActionProbabilityDisplay();
     qValueDisplayDiv.style.display = '';
@@ -261,27 +236,13 @@ function updateQValueOrPreferenceDisplay() {
         }
     };
 
-    if (getSelectedAlgorithm() === 'actor-critic') {
-        // Display H-values (preferences)
-        const statePreferences = hTable[currentState] || {};
-        setDisplayValue(qUpSpan, statePreferences['up']);
-        setDisplayValue(qDownSpan, statePreferences['down']);
-        setDisplayValue(qLeftSpan, statePreferences['left']);
-        setDisplayValue(qRightSpan, statePreferences['right']);
-    } else if (getSelectedAlgorithm() === 'sr') {
-        // Display SR-based Q-values
-        setDisplayValue(qUpSpan, calculateQValueSR(currentState, 'up', mTable, wTable, gridSize, getDiscountFactor(), takeAction, agentPos));
-        setDisplayValue(qDownSpan, calculateQValueSR(currentState, 'down', mTable, wTable, gridSize, getDiscountFactor(), takeAction, agentPos));
-        setDisplayValue(qLeftSpan, calculateQValueSR(currentState, 'left', mTable, wTable, gridSize, getDiscountFactor(), takeAction, agentPos));
-        setDisplayValue(qRightSpan, calculateQValueSR(currentState, 'right', mTable, wTable, gridSize, getDiscountFactor(), takeAction, agentPos));
-    } else {
-        // Display standard Q-values
-        const stateQValues = qTable[currentState] || {};
-        setDisplayValue(qUpSpan, stateQValues['up']);
-        setDisplayValue(qDownSpan, stateQValues['down']);
-        setDisplayValue(qLeftSpan, stateQValues['left']);
-        setDisplayValue(qRightSpan, stateQValues['right']);
-    }
+    // Display standard Q-values
+    const stateQValues = qTable[currentState] || {};
+    setDisplayValue(qUpSpan, stateQValues['up']);
+    setDisplayValue(qDownSpan, stateQValues['down']);
+    setDisplayValue(qLeftSpan, stateQValues['left']);
+    setDisplayValue(qRightSpan, stateQValues['right']);
+
 }
 
 function updateActionProbabilityDisplay() {
@@ -302,8 +263,6 @@ function updateActionProbabilityDisplay() {
 
 // --- Optimal Path Utilities ---
 function computeOptimalPathFromStart(maxSteps = gridSize * gridSize) {
-    // Compute greedy path starting from `startPos` following current policy (getBestActions)
-    // Track path computation time
     pathComputeStartTime = performance.now();
     const path = [];
     const visited = new Set();
@@ -768,7 +727,6 @@ function stopLearning() {
         lrValueSpan.textContent = getLearningRate().toFixed(2);
         discountValueSpan.textContent = getDiscountFactor().toFixed(2);
         epsilonValueSpan.textContent = getExplorationRate().toFixed(2);
-        softmaxBetaValueSpan.textContent = getSoftmaxBeta().toFixed(1);
         speedValueSpan.textContent = (1010 - simulationSpeed).toString();
         gridSizeValueSpan.textContent = gridSizeSlider.value;
         stepPenaltyValueSpan.textContent = parseFloat(stepPenaltySlider.value).toFixed(1);
@@ -779,7 +737,6 @@ function stopLearning() {
         lrSlider.value = getLearningRate();
         discountSlider.value = getDiscountFactor();
         epsilonSlider.value = getExplorationRate();
-        softmaxBetaSlider.value = getSoftmaxBeta();
         gridSizeSlider.value = gridSize;
         maxStepsSlider.value = maxStepsPerEpisode;
         algorithmSelect.value = getSelectedAlgorithm();
@@ -795,7 +752,7 @@ function stopLearning() {
 // Add a base reset function:
 function performReset(resetType) {
     stopLearning();
-    
+
     // Common reset actions
     if (resetType !== 'agent-only') {
         updateTerminateOnGemSetting();
@@ -886,11 +843,6 @@ function getCurrentConfigParams() {
     params.set('lr', getLearningRate().toString());
     params.set('discount', getDiscountFactor().toString());
     params.set('epsilon', getExplorationRate().toString());
-    params.set('beta', getSoftmaxBeta().toString());
-    params.set('actorLr', getActorLearningRate().toString());
-    params.set('criticLr', getCriticLearningRate().toString());
-    params.set('srMLr', getSRMWeightLearningRate().toString());
-    params.set('srWLr', getSRWWeightLearningRate().toString());
     params.set('grid', gridSize.toString());
     params.set('display', cellDisplayMode);
     params.set('stepPenalty', stepPenaltySlider.value);
@@ -929,7 +881,6 @@ function createSliderHandler(updateFunction, valueSpan, formatter = v => v.toFix
 createSliderHandler(updateLearningRate, lrValueSpan)(lrSlider);
 createSliderHandler(updateDiscountFactor, discountValueSpan)(discountSlider);
 createSliderHandler(updateExplorationRate, epsilonValueSpan)(epsilonSlider);
-createSliderHandler(updateSoftmaxBeta, softmaxBetaValueSpan, (v) => v.toFixed(1))(softmaxBetaSlider);
 createSliderHandler(setStepPenalty, stepPenaltyValueSpan, (v) => v.toFixed(1))(stepPenaltySlider);
 createSliderHandler(setGemRewardMagnitude, gemRewardValueSpan, (v) => v.toString())(gemRewardSlider);
 createSliderHandler(setBadStateRewardMagnitude, badStateRewardValueSpan, (v) => v.toString())(badStateRewardSlider);
@@ -978,15 +929,15 @@ function updateControlVisibility(algorithm, explorationStrategy) {
     const controls = {
         strategy: explorationStrategySelect.parentElement,
         epsilon: epsilonSlider.parentElement.parentElement,
-        softmaxBeta: softmaxBetaControl,
+        //softmaxBeta: softmaxBetaControl,
         mainLR: lrControl,
-        actorLR: actorCriticLRControl,
-        criticLR: criticLRControl,
-        srMLR: srMLRControl,
-        srWLR: srWLRControl,
-        srVectorAgent: srVectorAgentDisplayOption,
-        srVectorHover: srVectorHoverDisplayOption,
-        srWVector: srWVectorDisplayOption // NEW: Add W vector control
+        // actorLR: actorCriticLRControl,
+        // criticLR: criticLRControl,
+        // srMLR: srMLRControl,
+        // srWLR: srWLRControl,
+        // srVectorAgent: srVectorAgentDisplayOption,
+        // srVectorHover: srVectorHoverDisplayOption,
+        // srWVector: srWVectorDisplayOption
     };
 
     // Hide all controls initially
@@ -1035,10 +986,10 @@ function updateExplorationControlVisibility(strategy) {
     const epsilonField = epsilonSlider.parentElement.parentElement;
     if (strategy === 'epsilon-greedy') {
         epsilonField.style.display = '';
-        softmaxBetaControl.style.display = 'none';
+        //softmaxBetaControl.style.display = 'none';
     } else { // Handles 'random' and 'greedy'
         epsilonField.style.display = 'none';
-        softmaxBetaControl.style.display = 'none';
+        //softmaxBetaControl.style.display = 'none';
     }
 }
 
@@ -1166,13 +1117,6 @@ function updateChartTheme() {
     rewardChartInstance.update('none'); // Update chart without animation to avoid jarring changes
 }
 
-// --- End Theme Switching Logic ---
-
-// NEW: Theme Toggle Listener
-// themeToggleCheckbox.addEventListener('change', () => {
-//     setTheme(themeToggleCheckbox.checked ? 'light' : 'dark');
-// });
-
 // --- Initial Setup ---
 async function initializeApp() {
     // NEW: read URL params and re-apply
@@ -1204,51 +1148,13 @@ async function initializeApp() {
         const v = parseFloat(urlParams.get('epsilon'));
         if (!isNaN(v) && epsilonSlider && epsilonValueSpan) { updateExplorationRate(v); epsilonSlider.value = v; epsilonValueSpan.textContent = v.toFixed(2); }
     }
-    if (urlParams.has('beta')) {
-        const v = parseFloat(urlParams.get('beta'));
-        if (!isNaN(v) && softmaxBetaSlider && softmaxBetaValueSpan) { updateSoftmaxBeta(v); softmaxBetaSlider.value = v; softmaxBetaValueSpan.textContent = v.toFixed(1); }
-    }
-    if (urlParams.has('actorLr')) {
-        const v = parseFloat(urlParams.get('actorLr'));
-        if (!isNaN(v) && actorLrSlider && actorLrValueSpan) { // Check elements
-            updateActorLearningRate(v); 
-            actorLrSlider.value = v; 
-            actorLrValueSpan.textContent = v.toFixed(2); 
-        }
-    }
-    if (urlParams.has('criticLr')) {
-        const v = parseFloat(urlParams.get('criticLr'));
-        if (!isNaN(v) && criticLrSlider && criticLrValueSpan) { // Check elements
-            updateCriticLearningRate(v); 
-            criticLrSlider.value = v; 
-            criticLrValueSpan.textContent = v.toFixed(2); 
-        }
-    }
-    if (urlParams.has('srMLr')) {
-        const v = parseFloat(urlParams.get('srMLr'));
-        if (!isNaN(v) && srMLrSlider && srMLrValueSpan) { // Check elements
-            updateSRMLearningRate(v); 
-            srMLrSlider.value = v; 
-            srMLrValueSpan.textContent = v.toFixed(2); 
-        }
-    }
-    if (urlParams.has('srWLr')) {
-        const v = parseFloat(urlParams.get('srWLr'));
-        if (!isNaN(v) && srWLrSlider && srWLrValueSpan) { // Check elements
-            updateSRWLearningRate(v); 
-            srWLrSlider.value = v; 
-            srWLrValueSpan.textContent = v.toFixed(2); 
-        }
-    }
     if (urlParams.has('grid')) {
         const g = parseInt(urlParams.get('grid'),10);
         if (!isNaN(g) && gridSizeSlider && gridSizeValueSpan) {
             const fake = { value: g.toString() };
-            const { gridSize: newG, cellSize: newC, updated } = updateGridSize(fake, gridSize); // ensure 'updated' is handled if necessary, though resetAllAndDraw later will use the new gridSize
+            const { gridSize: newG, cellSize: newC, updated } = updateGridSize(fake, gridSize);
             gridSize = newG; cellSize = newC; // Directly update global gridSize and cellSize
             gridSizeSlider.value = newG; gridSizeValueSpan.textContent = newG.toString();
-            // If updateGridSize itself doesn't call reset/redraw, ensure it happens. 
-            // resetAllAndDraw() at the end of initializeApp will handle the full reset based on this new grid size.
         }
     }
     if (urlParams.has('display')) {
