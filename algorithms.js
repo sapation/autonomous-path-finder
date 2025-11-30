@@ -1,4 +1,4 @@
-// Base Algorithm Class
+
 class Algorithm {
     constructor(gridSize, config = {}) {
         this.gridSize = gridSize;
@@ -13,30 +13,8 @@ class Algorithm {
         this.initializeTables(gridSize);
     }
 
-    // Abstract methods to be implemented by subclasses
-    initializeTables(gridSize) {
-        throw new Error('initializeTables must be implemented by subclass');
-    }
-
-    chooseAction(state, takeActionFunc = null, agentPos = null) {
-        throw new Error('chooseAction must be implemented by subclass');
-    }
-
-    learningStep(currentState, action, reward, nextState, done, takeActionFunc = null, agentPos = null) {
-        throw new Error('learningStep must be implemented by subclass');
-    }
-
     getBestActions(state, takeActionFunc = null, agentPos = null) {
         throw new Error('getBestActions must be implemented by subclass');
-    }
-
-    getValue(state) {
-        throw new Error('getValue must be implemented by subclass');
-    }
-
-    // Common helper methods
-    ensureStateInitialized(state) {
-        // Default implementation - subclasses can override
     }
 
     calculateSoftmaxProbabilities(values, beta = null) {
@@ -89,9 +67,6 @@ class Algorithm {
                     probabilities[action] = exploreProb;
                 }
             });
-        } else if (strategy === 'softmax') {
-            const values = this.actions.map(action => this.getActionValue(state, action, takeActionFunc, agentPos));
-            probabilities = this.calculateSoftmaxProbabilities(values);
         } else if (strategy === 'random') {
             const uniformProb = 1.0 / numActions;
             this.actions.forEach(action => probabilities[action] = uniformProb);
@@ -107,7 +82,6 @@ class Algorithm {
         return probabilities;
     }
 
-    // Helper method to get action value - subclasses should override
     getActionValue(state, action, takeActionFunc = null, agentPos = null) {
         return 0;
     }
@@ -115,13 +89,8 @@ class Algorithm {
     updateConfig(newConfig) {
         this.config = { ...this.config, ...newConfig };
     }
-
-    reset() {
-        // Default implementation - subclasses can override for episode-specific resets
-    }
 }
 
-// Q-Learning Algorithm
 class QLearningAlgorithm extends Algorithm {
     constructor(gridSize, config = {}) {
         super(gridSize, config);
@@ -230,7 +199,6 @@ class QLearningAlgorithm extends Algorithm {
     }
 }
 
-// SARSA Algorithm
 class SarsaAlgorithm extends QLearningAlgorithm {
     learningStep(currentState, action, reward, nextState, done) {
         this.ensureStateInitialized(currentState);
@@ -247,7 +215,6 @@ class SarsaAlgorithm extends QLearningAlgorithm {
     }
 }
 
-// Monte Carlo free Algorithm
 class MonteCarloAlgorithm extends QLearningAlgorithm {
     constructor(gridSize, config = {}) {
         super(gridSize, config);
@@ -277,7 +244,6 @@ class MonteCarloAlgorithm extends QLearningAlgorithm {
     }
 }
 
-// Algorithm Factory
 class AlgorithmFactory {
     static create(algorithmType, gridSize, config = {}) {
         const algorithms = {
@@ -295,7 +261,6 @@ class AlgorithmFactory {
     }
 }
 
-// Algorithm Manager to handle current algorithm and provide unified interface
 class AlgorithmManager {
     constructor(initialAlgorithm, gridSize, config = {}) {
         this.currentAlgorithm = AlgorithmFactory.create(initialAlgorithm, gridSize, config);
@@ -316,7 +281,6 @@ class AlgorithmManager {
         this.currentAlgorithm = AlgorithmFactory.create(this.algorithmType, newGridSize, config);
     }
 
-    // Delegate methods to current algorithm
     chooseAction(state, takeActionFunc = null, agentPos = null) {
         return this.currentAlgorithm.chooseAction(state, takeActionFunc, agentPos);
     }
@@ -346,14 +310,12 @@ class AlgorithmManager {
         this.currentAlgorithm.reset();
     }
 
-    // Special method for Monte Carlo
     applyEpisodeUpdates() {
         if (this.currentAlgorithm instanceof MonteCarloAlgorithm) {
             this.currentAlgorithm.applyEpisodeUpdates();
         }
     }
 
-    // Getters for backward compatibility
     get qTable() { return this.currentAlgorithm.qTable || {}; }
     get vTable() { return this.currentAlgorithm.vTable || {}; }
     get hTable() { return this.currentAlgorithm.hTable || {}; }
@@ -361,10 +323,8 @@ class AlgorithmManager {
     get wTable() { return this.currentAlgorithm.wTable || {}; }
 }
 
-// Export the main interface and factory
 export const actions = ['up', 'down', 'left', 'right'];
 
-// Create the algorithm manager instance
 let algorithmManager = new AlgorithmManager('q-learning', 5, {
     learningRate: 0.1,
     discountFactor: 0.9,
@@ -372,10 +332,8 @@ let algorithmManager = new AlgorithmManager('q-learning', 5, {
     explorationStrategy: 'epsilon-greedy'
 });
 
-// Export the algorithm manager for direct access
 export { algorithmManager };
 
-// Replace all individual proxy objects with a factory function
 function createTableProxy(tableGetter) {
     return new Proxy({}, {
         get: (target, prop) => {
@@ -392,14 +350,12 @@ function createTableProxy(tableGetter) {
     });
 }
 
-// Replace all the individual proxy exports with this:
 export const qTable = createTableProxy(() => algorithmManager.qTable);
 export const vTable = createTableProxy(() => algorithmManager.vTable);
 export const hTable = createTableProxy(() => algorithmManager.hTable);
 export const mTable = createTableProxy(() => algorithmManager.mTable);
 export const wTable = createTableProxy(() => algorithmManager.wTable);
 
-// Configuration getters
 export const getConfig = () => algorithmManager.currentAlgorithm.config;
 export const getLearningRate = () => algorithmManager.currentAlgorithm.config.learningRate;
 export const getDiscountFactor = () => algorithmManager.currentAlgorithm.config.discountFactor;
@@ -407,14 +363,12 @@ export const getExplorationRate = () => algorithmManager.currentAlgorithm.config
 export const getExplorationStrategy = () => algorithmManager.currentAlgorithm.config.explorationStrategy;
 export const getSelectedAlgorithm = () => algorithmManager.algorithmType;
 
-// Backward compatibility - keep these exports for now until all references are updated
 export let learningRate = 0.1;
 export let discountFactor = 0.9;
 export let explorationRate = 0.2;
 export let explorationStrategy = 'epsilon-greedy';
 export let selectedAlgorithm = 'q-learning';
 
-// Main interface functions
 export function initializeTables(gridSize) {
     algorithmManager.updateGridSize(gridSize);
 }
@@ -446,7 +400,6 @@ export function applyMonteCarloUpdates() {
     algorithmManager.applyEpisodeUpdates();
 }
 
-// Update functions
 export function updateLearningRate(newLr) {
     learningRate = newLr;
     algorithmManager.updateConfig({ 
@@ -475,10 +428,8 @@ export function updateSelectedAlgorithm(newAlgo) {
     console.log("Selected algorithm updated to:", selectedAlgorithm);
 }
 
-// Export classes for potential direct use
 export { Algorithm, AlgorithmFactory, AlgorithmManager };
 
-// Helper function to get value for a state - used by environment.js
 export function getValueForState(state) {
     return algorithmManager.getValue(state);
 } 

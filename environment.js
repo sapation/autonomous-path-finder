@@ -1,21 +1,16 @@
-// --- Environment Setup ---
+
 export const canvas = document.getElementById('gridCanvas');
 export const ctx = canvas.getContext('2d');
 export const gridColor = '#ccc';
 
-// Reward state constants
 export const REWARD_EMPTY = 0;
 export const REWARD_GEM = 1;
 export const REWARD_BAD = -1;
 export const REWARD_WALL = 2;
 
-// Reward magnitudes for terminal states (NOW VARIABLES)
-// export const REWARD_MAGNITUDE_GEM = 10; // OLD CONSTANT
-// export const REWARD_MAGNITUDE_BAD = -10; // OLD CONSTANT
 export let rewardMagnitudeGem = 10;
 export let rewardMagnitudeBad = -10;
 
-// --- SVGs ---
 const agentSvgString = `
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
   <text x="50%" y="50%" dominant-baseline="middle" text-anchor="middle" font-size="70">🚆</text>
@@ -38,56 +33,51 @@ const wallSvgString = `
 
 export let agentImage = new Image();
 export let rewardImage = new Image();
-export let badStateImage = new Image(); // Image for the bad state
-export let wallImage = new Image(); // NEW: Image for the wall state
+export let badStateImage = new Image();
+export let wallImage = new Image();
 let agentLoaded = false;
 let rewardLoaded = false;
-let badStateLoaded = false; // Flag for bad state image
-let wallLoaded = false; // NEW: Flag for wall image
-let stepPenalty = -0.1; // Default step penalty
+let badStateLoaded = false;
+let wallLoaded = false;
+let stepPenalty = -0.1;
 
-// --- State ---
 export let agentPos = { x: 0, y: 0 };
-export let startPos = { x: 0, y: 0 }; // NEW: Track start position
-// Initial reward position depends on gridSize, set during initialization/reset
-export let gridRewards = []; // 2D array to store reward state for each cell (0: empty, 1: gem, -1: bad)
-let terminateOnGem = true; // Setting to control termination
+export let startPos = { x: 0, y: 0 };
 
-// --- Setter for Agent Position ---
+export let gridRewards = [];
+let terminateOnGem = true; 
+
 export function setAgentPos(newPos) {
     if (typeof newPos?.x === 'number' && typeof newPos?.y === 'number') {
-        agentPos = { ...newPos }; // Update the environment's agent position
+        agentPos = { ...newPos };
     } else {
         console.error("Invalid newPos provided to setAgentPos:", newPos);
     }
 }
 
-// --- Setter for Start Position --- // NEW
 export function setStartPos(newPos, gridSize) {
     if (typeof newPos?.x === 'number' && typeof newPos?.y === 'number' &&
         newPos.x >= 0 && newPos.x < gridSize &&
         newPos.y >= 0 && newPos.y < gridSize) {
-        // Check if the target cell is empty (not a gem, bad state, or wall)
+
         if (gridRewards[newPos.y][newPos.x] === REWARD_EMPTY) {
-            startPos = { ...newPos }; // Update the environment's start position
+            startPos = { ...newPos };
             console.log("Start position set to:", startPos);
-            return true; // Indicate success
+            return true;
         } else {
-            console.warn("Cannot set start position on a non-empty cell (gem, bad, or wall)."); // MODIFIED Warning
-            return false; // Indicate failure
+            console.warn("Cannot set start position on a non-empty cell (gem, bad, or wall).");
+            return false;
         }
     } else {
         console.error("Invalid newPos provided to setStartPos:", newPos);
-        return false; // Indicate failure
+        return false;
     }
 }
 
-// --- Setter for Terminate Setting ---
 export function setTerminateOnGem(value) {
-    terminateOnGem = !!value; // Ensure boolean
+    terminateOnGem = !!value;
 }
 
-// --- Setter for Step Penalty ---
 export function setStepPenalty(value) {
     const newPenalty = parseFloat(value);
     if (!isNaN(newPenalty)) {
@@ -98,7 +88,6 @@ export function setStepPenalty(value) {
     }
 }
 
-// --- NEW: Setter for Gem Reward Magnitude ---
 export function setGemRewardMagnitude(value) {
     const newReward = parseFloat(value);
     if (!isNaN(newReward) && newReward >= 0) { // Ensure non-negative
@@ -109,7 +98,6 @@ export function setGemRewardMagnitude(value) {
     }
 }
 
-// --- NEW: Setter for Bad State Reward Magnitude ---
 export function setBadStateRewardMagnitude(value) {
     const newReward = parseFloat(value);
     if (!isNaN(newReward) && newReward <= 0) { // Ensure non-positive
@@ -120,27 +108,21 @@ export function setBadStateRewardMagnitude(value) {
     }
 }
 
-// Helper to initialize or resize gridRewards
 export function initializeGridRewards(size) {
     gridRewards = Array(size).fill(null).map(() => Array(size).fill(REWARD_EMPTY));
-    // Set default gem and bad state locations if needed, or leave empty
-    // Example: Place a gem in the bottom right and a bad state in the center
     if (size > 0) {
-        // Ensure default placements don't overlap if size is small
         const gemX = size - 1;
         const gemY = size - 1;
         const badX = Math.floor(size / 2);
         const badY = Math.floor(size / 2);
 
         if (gemX === badX && gemY === badY && size > 1) {
-            // If they overlap, maybe move the bad state
             gridRewards[badY - 1][badX] = REWARD_BAD;
         } else if (size > 2) {
              gridRewards[badY][badX] = REWARD_BAD;
         }
         gridRewards[gemY][gemX] = REWARD_GEM;
 
-        // Example wall placement (optional, you can remove or change this)
         if (size > 3) {
             gridRewards[1][2] = REWARD_WALL;
             gridRewards[3][2] = REWARD_WALL;
@@ -149,12 +131,10 @@ export function initializeGridRewards(size) {
     console.log("Initialized gridRewards for size:", size); // Add log
 }
 
-// --- Grid Management ---
 export function updateGridSize(gridSizeInput, currentGridSize) {
     const newSize = parseInt(gridSizeInput.value, 10);
     if (!isNaN(newSize) && newSize >= 2 && newSize <= 20) {
         const newCellSize = canvas.width / newSize;
-        // initializeGridRewards(newSize); // REMOVE: Initialization will happen in reset or slider handler
         console.log("Grid size updated to:", newSize);
         return { gridSize: newSize, cellSize: newCellSize, updated: true };
     } else {
@@ -164,17 +144,15 @@ export function updateGridSize(gridSizeInput, currentGridSize) {
 }
 
 export function resetAgent() {
-    // agentPos = { x: 0, y: 0 }; // OLD
-    agentPos = { ...startPos }; // MODIFIED: Reset to current startPos
-    // REMOVED conditional initialization logic
+
+    agentPos = { ...startPos };
+
 }
 
-// --- Drawing Functions ---
 export function drawGrid(gridSize, cellSize, hoveredCell) {
     ctx.strokeStyle = gridColor;
     ctx.lineWidth = 1;
 
-    // Draw grid lines first
     for (let i = 0; i <= gridSize; i++) {
         ctx.beginPath();
         ctx.moveTo(i * cellSize, 0);
@@ -186,12 +164,9 @@ export function drawGrid(gridSize, cellSize, hoveredCell) {
         ctx.stroke();
     }
 
-    // --- Draw Start Location Indicator ---
     if (gridSize > 0 && cellSize > 0) {
-        // const startX = 0; // OLD
-        // const startY = 0; // OLD
-        const startX = startPos.x; // MODIFIED: Use startPos
-        const startY = startPos.y; // MODIFIED: Use startPos
+        const startX = startPos.x;
+        const startY = startPos.y;
         const emojiSize = cellSize * 0.6;
         const emojiX = startX * cellSize + (cellSize / 2);
         const emojiY = startY * cellSize + (cellSize / 2);
@@ -204,12 +179,9 @@ export function drawGrid(gridSize, cellSize, hoveredCell) {
         ctx.fillText('🏠', emojiX, emojiY);
         ctx.restore();
     }
-    // --- End Start Location Indicator ---
 
-    // Draw highlight on hovered cell (draw this *after* grid lines but *before* other items?)
-    // Let's draw it here, so it's under the agent/items but over the base grid/values/policy
     if (hoveredCell) {
-        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)'; // Semi-transparent yellow
+        ctx.fillStyle = 'rgba(255, 255, 0, 0.3)';
         ctx.fillRect(hoveredCell.x * cellSize, hoveredCell.y * cellSize, cellSize, cellSize);
     }
 }
@@ -222,9 +194,7 @@ export function drawAgent(pos, cellSize, visualPos = null) {
     }
 }
 
-// Draw gems, bad states, and walls based on gridRewards
 export function drawCellStates(gridSize, cellSize) {
-    // Ensure all necessary images are loaded
     if (!rewardLoaded || !badStateLoaded || !wallLoaded) return;
 
     for (let y = 0; y < gridSize; y++) {
@@ -241,19 +211,21 @@ export function drawCellStates(gridSize, cellSize) {
     }
 }
 
-// --- Value Function Calculation & Drawing (Moved from algorithms.js) ---
 import {
-    actions, getBestActions, getActionProbabilities, qTable, vTable, hTable,
-    mTable, wTable, // Import SR tables
-    getSelectedAlgorithm, // Use getter instead of selectedAlgorithm
-    getDiscountFactor, // Use getter instead of discountFactor
-    getValueForState // Import the helper function
+    actions, 
+    getBestActions, 
+    getActionProbabilities, 
+    qTable, 
+    vTable, 
+    hTable,
+    mTable, wTable,
+    getSelectedAlgorithm,
+    getDiscountFactor,
+    getValueForState
 } from './algorithms.js';
 
-// Helper function to get the Value (max Q or V(s)) for a state
-function getValue(state, qTable, vTable, mTable, wTable, currentAlgorithm, gridSize) {
+function getValue(state, qTable) {
     try {
-        // Use the helper function
         return getValueForState(state);
     } catch (error) {
         console.warn('Error accessing algorithm value, falling back to direct table access:', error);
@@ -269,43 +241,40 @@ function getValue(state, qTable, vTable, mTable, wTable, currentAlgorithm, gridS
     }
 }
 
-// Helper function to find min/max V(s) across the grid
 function getMinMaxValues(gridSize, qTable, vTable, mTable, wTable, currentAlgorithm) {
     let minV = Infinity;
     let maxV = -Infinity;
     for (let x = 0; x < gridSize; x++) {
         for (let y = 0; y < gridSize; y++) {
             const state = `${x},${y}`;
-            // Pass all potentially needed tables and the algorithm to getValue
+
             const value = getValue(state, qTable, vTable, mTable, wTable, currentAlgorithm, gridSize);
             if (value < minV) minV = value;
             if (value > maxV) maxV = value;
         }
     }
-    // Handle cases where min/max weren't updated (e.g., all zeros)
+
     if (minV === Infinity || maxV === -Infinity) {
-         minV = Math.min(0, maxV === -Infinity ? 0 : maxV); // If maxV is still -inf, minV should be 0
-         maxV = Math.max(0, minV === Infinity ? 0 : minV); // If minV is still inf, maxV should be 0
+         minV = Math.min(0, maxV === -Infinity ? 0 : maxV);
+         maxV = Math.max(0, minV === Infinity ? 0 : minV);
      }
-     // Ensure min/max range isn't just zero
+
      if (Math.abs(maxV - minV) < 1e-6) {
-         if (Math.abs(maxV) < 1e-6) { // Both are zero
-             minV = -0.1; // Give a small range around zero
+         if (Math.abs(maxV) < 1e-6) {
+             minV = -0.1;
              maxV = 0.1;
-         } else if (maxV > 0) { // Both are positive
+         } else if (maxV > 0) {
              minV = 0;
-         } else { // Both are negative
+         } else {
              maxV = 0;
          }
      }
     return { minV, maxV };
 }
 
-// Helper function to map a value to a Red-Blue-White color using CSS variables
 function valueToColor(value, minV, maxV) {
-    const epsilon = 1e-6; // Small tolerance for zero check
+    const epsilon = 1e-6;
 
-    // If range is zero or value is close to zero, use the zero-value background
     if (Math.abs(maxV - minV) < epsilon || Math.abs(value) < epsilon) {
         return getComputedStyle(document.documentElement).getPropertyValue('--color-value-zero-bg');
     }
@@ -314,30 +283,21 @@ function valueToColor(value, minV, maxV) {
 
     if (value > 0) {
         colorVar = '--color-value-pos-bg';
-        // Ensure maxV is positive and significantly different from 0
         if (maxV <= epsilon) return getComputedStyle(document.documentElement).getPropertyValue('--color-value-zero-bg');
-        // Normalize intensity based on positive range [0, maxV]
         const intensity = Math.min(1, Math.max(0, value / maxV));
-        // We need to adjust alpha based on intensity
-        // Get the base color string (e.g., "rgba(r, g, b, alpha)")
         const baseColor = getComputedStyle(document.documentElement).getPropertyValue(colorVar).trim();
-        // Extract existing alpha and replace it
         const rgbaMatch = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
         if (rgbaMatch) {
-            // Adjust alpha based on intensity (e.g., scale original alpha)
             const originalAlpha = parseFloat(rgbaMatch[4] || '1');
-            const newAlpha = Math.max(0.1, originalAlpha * intensity); // Ensure minimum visibility
+            const newAlpha = Math.max(0.1, originalAlpha * intensity);
             return `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${newAlpha})`;
         }
-        return baseColor; // Fallback to original color
+        return baseColor;
 
-    } else { // value < 0
+    } else {
         colorVar = '--color-value-neg-bg';
-        // Ensure minV is negative and significantly different from 0
         if (minV >= -epsilon) return getComputedStyle(document.documentElement).getPropertyValue('--color-value-zero-bg');
-        // Normalize intensity based on negative range [minV, 0]
-        const intensity = Math.min(1, Math.max(0, value / minV)); // value/minV is positive
-        // Adjust alpha based on intensity
+        const intensity = Math.min(1, Math.max(0, value / minV));
         const baseColor = getComputedStyle(document.documentElement).getPropertyValue(colorVar).trim();
         const rgbaMatch = baseColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
         if (rgbaMatch) {
@@ -349,23 +309,18 @@ function valueToColor(value, minV, maxV) {
     }
 }
 
-// Add this helper function near the top:
 function parseColorFromCSS(cssVar) {
     const colorStr = getComputedStyle(document.documentElement).getPropertyValue(cssVar).trim();
-    
-    // Try hex format first
     const hexMatch = colorStr.match(/#([0-9a-fA-F]{2})([0-9a-fA-F]{2})([0-9a-fA-F]{2})/);
     if (hexMatch) {
         return { r: parseInt(hexMatch[1], 16), g: parseInt(hexMatch[2], 16), b: parseInt(hexMatch[3], 16) };
     }
-    
-    // Try rgb format
+
     const rgbMatch = colorStr.match(/rgb\((\d+),\s*(\d+),\s*(\d+)\)/);
     if (rgbMatch) {
         return { r: parseInt(rgbMatch[1]), g: parseInt(rgbMatch[2]), b: parseInt(rgbMatch[3]) };
     }
-    
-    // Fallback
+
     return { r: 128, g: 128, b: 128 };
 }
 
@@ -380,7 +335,6 @@ function adjustColorAlpha(cssVar, intensity) {
     return baseColor;
 }
 
-// Simplify interpolateProbColor function:
 export function interpolateProbColor(prob) {
     const colorStart = parseColorFromCSS('--color-prob-zero');
     const colorEnd = parseColorFromCSS('--color-prob-one');
@@ -393,7 +347,6 @@ export function interpolateProbColor(prob) {
     return `rgb(${r}, ${g}, ${b})`;
 }
 
-// Simplify srValueToColor function:
 function srValueToColor(value, maxM) {
     const epsilon = 1e-6;
     if (maxM < epsilon || value < epsilon) {
@@ -403,11 +356,8 @@ function srValueToColor(value, maxM) {
     return adjustColorAlpha('--color-sr-value-bg-max', intensity);
 }
 
-// --- NEW: Function to draw the SR Vector M(hoveredState, :) ---
 export function drawSRVector(ctx, gridSize, cellSize, hoveredStateKey, mTable, showSRText = true) {
     if (!hoveredStateKey || !mTable || !mTable[hoveredStateKey]) {
-        // Draw nothing or a default background if no state is hovered or M-table is incomplete
-        // For now, just return, the grid lines will show.
         return;
     }
 
@@ -415,7 +365,6 @@ export function drawSRVector(ctx, gridSize, cellSize, hoveredStateKey, mTable, s
     let maxM = -Infinity;
     let minM = Infinity; // Though typically non-negative, let's check
 
-    // Find min/max in the specific vector M(hoveredState, :)
     for (let x_prime = 0; x_prime < gridSize; x_prime++) {
         for (let y_prime = 0; y_prime < gridSize; y_prime++) {
             const state_prime = `${x_prime},${y_prime}`;
@@ -427,29 +376,24 @@ export function drawSRVector(ctx, gridSize, cellSize, hoveredStateKey, mTable, s
     if (maxM === -Infinity) maxM = 0; // Handle case of all zeros
     if (minM === Infinity) minM = 0;
 
-    // --- Text Style (Optional) ---
     const fontSize = Math.max(8, Math.floor(cellSize * 0.20));
     ctx.font = `${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono') || 'monospace'}`;
     ctx.textAlign = 'center';
     ctx.textBaseline = 'middle';
 
-    // --- Draw Cells ---
     for (let x_prime = 0; x_prime < gridSize; x_prime++) {
         for (let y_prime = 0; y_prime < gridSize; y_prime++) {
             const state_prime = `${x_prime},${y_prime}`;
             const mValue = srVector[state_prime] ?? 0;
             const color = srValueToColor(mValue, maxM);
 
-            // Draw cell background color
             ctx.fillStyle = color;
             ctx.fillRect(x_prime * cellSize, y_prime * cellSize, cellSize, cellSize);
 
-            // Draw SR value text if enabled
             if (showSRText) {
                 const textX = x_prime * cellSize + cellSize / 2;
                 const textY = y_prime * cellSize + cellSize / 2;
 
-                // Use CSS variables for text color and shadow
                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-sr-value-text');
                 ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue('--color-sr-value-text-shadow');
                 ctx.shadowBlur = 2;
@@ -465,13 +409,11 @@ export function drawSRVector(ctx, gridSize, cellSize, hoveredStateKey, mTable, s
     }
 }
 
-// Function to draw the value function V(s) or max Q(s,a) overlay
 export function drawValues(ctx, gridSize, cellSize, qTable, vTable, mTable, wTable, currentAlgorithm, showValueText) {
     if (!qTable && !vTable && !mTable && !wTable) return;
 
     const { minV, maxV } = getMinMaxValues(gridSize, qTable, vTable, mTable, wTable, currentAlgorithm);
 
-    // --- Text Style ---
     const fontSize = Math.max(8, Math.floor(cellSize * 0.25));
     ctx.font = `${fontSize}px ${getComputedStyle(document.documentElement).getPropertyValue('--font-mono') || 'monospace'}`;
     ctx.textAlign = 'center';
@@ -483,15 +425,13 @@ export function drawValues(ctx, gridSize, cellSize, qTable, vTable, mTable, wTab
             const value = getValue(state, qTable, vTable, mTable, wTable, currentAlgorithm, gridSize);
             const color = valueToColor(value, minV, maxV);
 
-            // Draw cell background color
             ctx.fillStyle = color;
             ctx.fillRect(x * cellSize, y * cellSize, cellSize, cellSize);
 
-            // Draw value text if enabled
             if (showValueText) {
                 const textX = x * cellSize + cellSize / 2;
                 const textY = y * cellSize + cellSize / 2;
-                // Use CSS variables for text color and shadow
+
                 ctx.fillStyle = getComputedStyle(document.documentElement).getPropertyValue('--color-value-text');
                 ctx.shadowColor = getComputedStyle(document.documentElement).getPropertyValue('--color-value-text-shadow');
                 ctx.shadowBlur = 2;
@@ -507,7 +447,6 @@ export function drawValues(ctx, gridSize, cellSize, qTable, vTable, mTable, wTab
     }
 }
 
-// Function to draw floating reward text
 export function drawRewardText(ctx, text, pos, cellSize, alpha, offsetY) {
     if (alpha <= 0) return;
 
@@ -520,11 +459,9 @@ export function drawRewardText(ctx, text, pos, cellSize, alpha, offsetY) {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'bottom';
 
-    // Use CSS variables for color and shadow, respecting current alpha
     const textColor = getComputedStyle(document.documentElement).getPropertyValue('--color-reward-text');
     const shadowColor = getComputedStyle(document.documentElement).getPropertyValue('--color-reward-text-shadow');
 
-    // Apply alpha to the text color
     const rgbaMatch = textColor.match(/rgba?\((\d+),\s*(\d+),\s*(\d+)(?:,\s*([\d.]+))?\)/);
      if (rgbaMatch) {
         ctx.fillStyle = `rgba(${rgbaMatch[1]}, ${rgbaMatch[2]}, ${rgbaMatch[3]}, ${alpha})`;
@@ -541,7 +478,6 @@ export function drawRewardText(ctx, text, pos, cellSize, alpha, offsetY) {
     ctx.restore(); // Restore context state (removes alpha, shadow, etc.)
 }
 
-// --- Image Loading ---
 export function loadImages() {
     return new Promise((resolve, reject) => {
         let imagesPending = 4; // Increased to 4 for wall image
@@ -561,7 +497,6 @@ export function loadImages() {
              reject(new Error(`Failed to load ${imageName}`)); // Reject the promise on error
         }
 
-
         agentImage.onload = () => { console.log("Agent image loaded."); agentLoaded = true; onImageLoad(); };
         rewardImage.onload = () => { console.log("Reward image loaded."); rewardLoaded = true; onImageLoad(); };
         badStateImage.onload = () => { console.log("Bad state image loaded."); badStateLoaded = true; onImageLoad(); };
@@ -572,7 +507,6 @@ export function loadImages() {
         badStateImage.onerror = () => onImageError("bad state");
         wallImage.onerror = () => onImageError("wall");
 
-        // Helper function to safely encode SVG strings for btoa
         const safeBtoa = (svgString) => btoa(unescape(encodeURIComponent(svgString)));
 
         agentImage.src = 'data:image/svg+xml;base64,' + safeBtoa(agentSvgString);
@@ -582,7 +516,6 @@ export function loadImages() {
     });
 }
 
-// --- Agent Interaction ---
 export function takeAction(action, currentAgentPos, gridSize) {
     let { x, y } = currentAgentPos;
     let reward = stepPenalty; // Use the configurable step penalty
@@ -608,31 +541,28 @@ export function takeAction(action, currentAgentPos, gridSize) {
     let nextX = x; // Start assuming no move
     let nextY = y;
 
-    // Check if the potential next cell is within bounds and NOT a wall
     if (potentialNextX >= 0 && potentialNextX < gridSize &&
         potentialNextY >= 0 && potentialNextY < gridSize &&
         gridRewards[potentialNextY][potentialNextX] !== REWARD_WALL) {
-        // If it's a valid move (not into a wall), update the next position
+
         nextX = potentialNextX;
         nextY = potentialNextY;
     }
-
 
     const newAgentPos = { x: nextX, y: nextY };
     const nextState = `${nextX},${nextY}`;
     const cellState = gridRewards[nextY][nextX]; // Check the state of the *actual* destination cell
 
-    // Check reward based on the state of the destination cell
-    // This logic only applies if the agent actually moved (nextX, nextY changed)
-    // or if the agent started on a gem/bad state and tried to move off but couldn't (e.g., walled in).
+
+
     if (cellState === REWARD_GEM) {
-        // reward = REWARD_MAGNITUDE_GEM; // Use constant // OLD
+
         reward = rewardMagnitudeGem; // MODIFIED: Use variable
         if (terminateOnGem) {
             done = true; // Set done flag if setting is enabled
         }
     } else if (cellState === REWARD_BAD) {
-        // reward = REWARD_MAGNITUDE_BAD; // Use constant // OLD
+
         reward = rewardMagnitudeBad; // MODIFIED: Use variable
         done = true; // Episode always terminates on hitting the bad state
     }
@@ -640,14 +570,12 @@ export function takeAction(action, currentAgentPos, gridSize) {
     return { nextState, reward, newAgentPos, done }; // Return done flag
 }
 
-// --- Dynamic Reward Modification ---
 export function cycleCellState(x, y, gridSize) {
     if (x < 0 || x >= gridSize || y < 0 || y >= gridSize) {
         console.error("Invalid cell coordinates:", x, y);
         return false; // Indicate failure
     }
 
-    // Ensure the cell is not the current agent start position
     if (x === startPos.x && y === startPos.y) {
         console.warn("Cannot change the state of the agent's start cell.");
         return false;
@@ -671,16 +599,14 @@ export function cycleCellState(x, y, gridSize) {
     return true; // Indicate success
 }
 
-// Helper to get the reward grid (e.g., for algorithms)
 export function getGridRewards() {
-    // Return a deep copy to prevent external modification
+
     return gridRewards.map(row => [...row]);
 }
 
 export function drawPolicyArrows(ctx, gridSize, cellSize, qTable, hTable, mTable, wTable, currentAlgorithm, takeActionFuncForEnvLookup, currentAgentPosForLookup) {
     if (!qTable && !hTable && !mTable && !wTable) return;
 
-    // --- Style for the ASCII Arrows ---
     const fontSize = Math.max(12, Math.floor(cellSize * 0.6));
     ctx.font = `bold ${fontSize}px Arial`;
     ctx.textAlign = 'center';
@@ -689,9 +615,9 @@ export function drawPolicyArrows(ctx, gridSize, cellSize, qTable, hTable, mTable
     for (let x = 0; x < gridSize; x++) {
         for (let y = 0; y < gridSize; y++) {
             const state = `${x},${y}`;
-            // Get agent position for this state (needed for SR Q lookups)
+
             const stateAgentPos = { x: x, y: y };
-            // Pass lookup functions needed for SR Q-value calculation inside these helpers
+
             const bestActions = getBestActions(state, takeActionFuncForEnvLookup, stateAgentPos);
             const actionProbs = getActionProbabilities(state, takeActionFuncForEnvLookup, stateAgentPos);
 
